@@ -5,12 +5,14 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
 #include "InputActionValue.h"
+#include "SACharacterMovementComponent.h"
 #include "SACharacter.generated.h"
 
 class UInputAction;
 class UInputMappingContext;
 class UCameraComponent;
 class USpringArmComponent;
+class USACharacterMovementComponent;
 
 UENUM(BlueprintType)
 enum class EMovementStance : uint8
@@ -25,11 +27,13 @@ class STEALTHACTIONGAME_API ASACharacter : public ACharacter
 	GENERATED_BODY()
 
 public:
-	ASACharacter();
+	ASACharacter(const FObjectInitializer& ObjectInitializer);
+	
+	UFUNCTION(BlueprintPure, Category = "Movement")
+	USACharacterMovementComponent* GetSACharacterMovement() const { return SAMovementComponent; }
 
 protected:
 	// === Default Cycle ===
-	virtual void PostInitializeComponents() override;
 	virtual void BeginPlay() override;
 	virtual void SetupPlayerInputComponent(UInputComponent* PlayerInputComponent) override;
 
@@ -62,27 +66,15 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Input")
 	TObjectPtr<UInputAction> JumpAction;
 	
-	// === Movement Speed ===
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Movement|Speed")
-	float WalkSpeed = 300.f;
-	
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Movement|Speed")
-	float RunSpeed = 600.f;
-	
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Movement|Speed")
-	float CrouchSpeed = 150.f;
-	
 	// === Movement State ===
 	UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category = "Movement|State")
 	EMovementStance CurrentStance = EMovementStance::Standing;
 	
-	UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category = "Movement|State")
-	bool bIsRunning = false;
-	
-	void UpdateMovementSpeed();
-	
 private:
-	// === Input Handlers ===
+
+	UPROPERTY()
+	TObjectPtr<USACharacterMovementComponent> SAMovementComponent;
+	
 	void Move(const FInputActionValue& Value);
 	void Look(const FInputActionValue& Value);
 	

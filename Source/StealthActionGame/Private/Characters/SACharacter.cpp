@@ -7,9 +7,12 @@
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
 #include "InputAction.h"
+#include "Characters/SACharacterMovementComponent.h"
 
-ASACharacter::ASACharacter()
+ASACharacter::ASACharacter(const FObjectInitializer& ObjectInitializer) : Super(ObjectInitializer.SetDefaultSubobjectClass<USACharacterMovementComponent>(ACharacter::CharacterMovementComponentName))
 {
+	SAMovementComponent = Cast<USACharacterMovementComponent>(GetSACharacterMovement());
+	
 	// === Camera Components ===
 	SpringArmComponent = CreateDefaultSubobject<USpringArmComponent>(TEXT("SpringArm"));
 	SpringArmComponent->SetupAttachment(RootComponent);
@@ -19,7 +22,7 @@ ASACharacter::ASACharacter()
 	CameraComponent = CreateDefaultSubobject<UCameraComponent>(TEXT("Camera"));
 	CameraComponent->SetupAttachment(SpringArmComponent);
 	
-	// === Default Movement Config ===
+	// === Movement ===
 	bUseControllerRotationYaw = false;
 	
 	if (UCharacterMovementComponent* Movement = GetCharacterMovement())
@@ -27,7 +30,6 @@ ASACharacter::ASACharacter()
 		Movement->bOrientRotationToMovement = true;
 		Movement->GetNavAgentPropertiesRef().bCanCrouch = true;
 	}
-	
 }
 
 void ASACharacter::BeginPlay()
@@ -78,61 +80,6 @@ void ASACharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompone
 	}
 }
 
-void ASACharacter::PostInitializeComponents()
-{
-	Super::PostInitializeComponents();
-	if (UCharacterMovementComponent* Movement = GetCharacterMovement())
-	{
-		Movement->MaxWalkSpeed = WalkSpeed;
-		Movement->MaxWalkSpeedCrouched = CrouchSpeed;
-	}
-}
-
-void ASACharacter::Move(const FInputActionValue& Value)
-{
-	FVector2D InputVector = Value.Get<FVector2D>();
-	
-	if (!Controller || InputVector.IsNearlyZero())
-		return;
-	
-	const FRotator ControlRotation = Controller->GetControlRotation();
-	const FRotator YawRotation(0.f, ControlRotation.Yaw, 0.f);
-	
-	const FRotationMatrix RotMatrix(YawRotation);
-	
-	const FVector ForwardDir = RotMatrix.GetUnitAxis(EAxis::X);
-	AddMovementInput(ForwardDir, InputVector.Y);
-	
-	const FVector RightDir   = RotMatrix.GetUnitAxis(EAxis::Y);
-	AddMovementInput(RightDir, InputVector.X);
-}
-
-void ASACharacter::Look(const FInputActionValue& Value)
-{
-	FVector2D LookInput = Value.Get<FVector2D>();
-	
-	if (!Controller || LookInput.IsNearlyZero())
-		return;
-	
-	AddControllerYawInput(LookInput.X);
-	AddControllerPitchInput(LookInput.Y);
-}
-
-void ASACharacter::StartRun()
-{
-    if (CurrentStance == EMovementStance::Crouching)
-        return;
-
-    bIsRunning = true;
-    UpdateMovementSpeed();
-}
-
-void ASACharacter::StopRun()
-{
-	bIsRunning = false;
-	UpdateMovementSpeed();
-}
-
 void ASACharacter::StartCrouch()
 {
 	Crouch();
@@ -145,17 +92,38 @@ void ASACharacter::StopCrouch()
 
 void ASACharacter::OnStartCrouch(float HalfHeightAdjust, float ScaledHalfHeightAdjust)
 {
-    Super::OnStartCrouch(HalfHeightAdjust, ScaledHalfHeightAdjust);
-    CurrentStance = EMovementStance::Crouching;
-    bIsRunning = false;
-    UpdateMovementSpeed();
+	Super::OnStartCrouch(HalfHeightAdjust, ScaledHalfHeightAdjust);
+	CurrentStance = EMovementStance::Crouching;
+
+	if (SAMovementComponent)
+	{
+		SAMovementComponent->bWantsToRun = false;
+	}
 }
 
 void ASACharacter::OnEndCrouch(float HalfHeightAdjust, float ScaledHalfHeightAdjust)
 {
 	Super::OnEndCrouch(HalfHeightAdjust, ScaledHalfHeightAdjust);
 	CurrentStance = EMovementStance::Standing;
-	UpdateMovementSpeed();
+}
+
+void ASACharacter::StartRun()
+{
+	if (CurrentStance == EMovementStance::Crouching)
+		return;
+
+	if (SAMovementComponent)
+	{
+		SAMovementComponent->bWantsToRun = true;
+	}
+}
+
+void ASACharacter::StopRun()
+{
+	if (SAMovementComponent)
+	{
+		SAMovementComponent->bWantsToRun = false;
+	}
 }
 
 void ASACharacter::StartJump()
@@ -168,10 +136,27 @@ void ASACharacter::StopJump()
 	StopJumping();
 }
 
-void ASACharacter::UpdateMovementSpeed()
+void ASACharacter::Move(const FInputActionValue& Value)
 {
-	if (UCharacterMovementComponent* Movement = GetCharacterMovement())
-	{
-		Movement->MaxWalkSpeed = bIsRunning ? RunSpeed : WalkSpeed;
-	}
+	const FVector2D InputVector = Value.Get<FVector2D>();
+
+	if (!Controller || InputVector.IsNearlyZero())
+		return;
+
+	const FRotator YawRotation(0.f, Controller->GetControlRotation().Yaw, 0.f);
+	const FRotationMatrix RotMatrix(YawRotation);
+
+	AddMovementInput(RotMatrix.GetUnitAxis(EAxis::X), InputVector.Y);
+	AddMovementInput(RotMatrix.GetUnitAxis(EAxis::Y), InputVector.X);
+}
+
+void ASACharacter::Look(const FInputActionValue& Value)
+{
+	const FVector2D LookInput = Value.Get<FVector2D>();
+
+	if (!Controller || LookInput.IsNearlyZero())
+		return;
+
+	AddControllerYawInput(LookInput.X);
+	AddControllerPitchInput(LookInput.Y);
 }
