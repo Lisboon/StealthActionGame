@@ -1,44 +1,46 @@
 // Copyright 2026, Lisboon. All Rights Reserved.
 
 #include "Characters/SACharacter.h"
-#include "GameFramework/SpringArmComponent.h"
 #include "Camera/CameraComponent.h"
-#include "GameFramework/CharacterMovementComponent.h"
+#include "GameFramework/SpringArmComponent.h"
+#include "Characters/SACharacterMovementComponent.h"
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
 #include "InputAction.h"
-#include "Characters/SACharacterMovementComponent.h"
 
-ASACharacter::ASACharacter(const FObjectInitializer& ObjectInitializer) : Super(ObjectInitializer.SetDefaultSubobjectClass<USACharacterMovementComponent>(ACharacter::CharacterMovementComponentName))
+ASACharacter::ASACharacter(const FObjectInitializer& ObjectInitializer)
+	: Super(ObjectInitializer.SetDefaultSubobjectClass<USACharacterMovementComponent>(
+		ACharacter::CharacterMovementComponentName))
 {
-	SAMovementComponent = Cast<USACharacterMovementComponent>(GetSACharacterMovement());
-	
-	// === Camera Components ===
+	SAMovementComponent = Cast<USACharacterMovementComponent>(GetCharacterMovement());
+
+	// === Camera ===
 	SpringArmComponent = CreateDefaultSubobject<USpringArmComponent>(TEXT("SpringArm"));
 	SpringArmComponent->SetupAttachment(RootComponent);
-	SpringArmComponent->TargetArmLength = 300.0f;
+	SpringArmComponent->TargetArmLength = 300.f;
 	SpringArmComponent->bUsePawnControlRotation = true;
-	
+
 	CameraComponent = CreateDefaultSubobject<UCameraComponent>(TEXT("Camera"));
 	CameraComponent->SetupAttachment(SpringArmComponent);
-	
+
 	// === Movement ===
 	bUseControllerRotationYaw = false;
-	
-	if (UCharacterMovementComponent* Movement = GetCharacterMovement())
+
+	if (SAMovementComponent)
 	{
-		Movement->bOrientRotationToMovement = true;
-		Movement->GetNavAgentPropertiesRef().bCanCrouch = true;
+		SAMovementComponent->bOrientRotationToMovement = true;
+		SAMovementComponent->GetNavAgentPropertiesRef().bCanCrouch = true;
 	}
 }
 
 void ASACharacter::BeginPlay()
 {
 	Super::BeginPlay();
-	
+
 	if (const APlayerController* PC = Cast<APlayerController>(GetController()))
 	{
-		if  (UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PC->GetLocalPlayer()))
+		if (UEnhancedInputLocalPlayerSubsystem* Subsystem =
+			ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PC->GetLocalPlayer()))
 		{
 			if (InputMappingContext)
 			{
@@ -51,31 +53,31 @@ void ASACharacter::BeginPlay()
 void ASACharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 {
 	Super::SetupPlayerInputComponent(PlayerInputComponent);
-	
-	if (UEnhancedInputComponent* EnhancedInput = Cast<UEnhancedInputComponent>(PlayerInputComponent))
+
+	if (UEnhancedInputComponent* EI = Cast<UEnhancedInputComponent>(PlayerInputComponent))
 	{
 		if (MoveAction)
-			EnhancedInput->BindAction(MoveAction, ETriggerEvent::Triggered, this, &ASACharacter::Move);
-		
+			EI->BindAction(MoveAction, ETriggerEvent::Triggered, this, &ASACharacter::Move);
+
 		if (LookAction)
-			EnhancedInput->BindAction(LookAction, ETriggerEvent::Triggered, this, &ASACharacter::Look);
-		
+			EI->BindAction(LookAction, ETriggerEvent::Triggered, this, &ASACharacter::Look);
+
 		if (RunAction)
 		{
-			EnhancedInput->BindAction(RunAction, ETriggerEvent::Started, this, &ASACharacter::StartRun);
-			EnhancedInput->BindAction(RunAction, ETriggerEvent::Completed, this, &ASACharacter::StopRun);
+			EI->BindAction(RunAction, ETriggerEvent::Started,   this, &ASACharacter::StartRun);
+			EI->BindAction(RunAction, ETriggerEvent::Completed, this, &ASACharacter::StopRun);
 		}
-		
+
 		if (CrouchAction)
 		{
-			EnhancedInput->BindAction(CrouchAction, ETriggerEvent::Started, this, &ASACharacter::StartCrouch);
-			EnhancedInput->BindAction(CrouchAction, ETriggerEvent::Completed, this, &ASACharacter::StopCrouch);
+			EI->BindAction(CrouchAction, ETriggerEvent::Started,   this, &ASACharacter::StartCrouch);
+			EI->BindAction(CrouchAction, ETriggerEvent::Completed, this, &ASACharacter::StopCrouch);
 		}
-		
+
 		if (JumpAction)
 		{
-			EnhancedInput->BindAction(JumpAction, ETriggerEvent::Started, this, &ASACharacter::StartJump);
-			EnhancedInput->BindAction(JumpAction, ETriggerEvent::Completed, this, &ASACharacter::StopJump);
+			EI->BindAction(JumpAction, ETriggerEvent::Started,   this, &ASACharacter::StartJump);
+			EI->BindAction(JumpAction, ETriggerEvent::Completed, this, &ASACharacter::StopJump);
 		}
 	}
 }
@@ -134,6 +136,11 @@ void ASACharacter::StartJump()
 void ASACharacter::StopJump()
 {
 	StopJumping();
+}
+
+bool ASACharacter::IsSprinting() const
+{
+	return SAMovementComponent && SAMovementComponent->bWantsToRun;
 }
 
 void ASACharacter::Move(const FInputActionValue& Value)
