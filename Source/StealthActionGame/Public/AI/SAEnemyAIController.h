@@ -11,9 +11,6 @@
 class UAIPerceptionComponent;
 class UBehaviorTree;
 
-// Static Blackboard key names.
-// Defined here so BTTasks, BTDecorators and this controller all reference
-// the same strings. A typo in a FName("...") literal is a silent runtime bug.
 namespace SABlackboardKeys
 {
 	static const FName AlertState     = TEXT("AlertState");
@@ -55,10 +52,6 @@ protected:
 	TObjectPtr<UBehaviorTree> BehaviorTreeAsset;
 
 	// === Perception Tuning ===
-	// NOTE: These are read in the constructor to configure SenseConfigs.
-	// Changing them in a derived Blueprint will NOT affect the SenseConfig
-	// unless PostInitializeComponents re-applies them via RequestStimuliListenerUpdate().
-	// For now, treat these as CDO-level defaults only.
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "AI|Perception|Sight")
 	float SightRadius = 1500.f;
 
@@ -84,8 +77,6 @@ private:
 	void HandleSightStimulus(AActor* Actor, const FAIStimulus& Stimulus);
 	void HandleHearingStimulus(AActor* Actor, const FAIStimulus& Stimulus);
 
-	// UFUNCTION required — SetTimer with a member pointer needs UObject reflection.
-	// Without this, the timer delegate is invalid and callbacks never fire.
 	UFUNCTION()
 	void OnSuspiciousTimeout();
 

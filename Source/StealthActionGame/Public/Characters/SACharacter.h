@@ -12,6 +12,7 @@ class UInputMappingContext;
 class UCameraComponent;
 class USpringArmComponent;
 class USACharacterMovementComponent;
+class USACoverComponent;
 
 UENUM(BlueprintType)
 enum class EMovementStance : uint8
@@ -49,6 +50,9 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Camera")
 	TObjectPtr<UCameraComponent> CameraComponent;
 
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Cover")
+	TObjectPtr<USACoverComponent> CoverComponent;
+
 	// === Input Assets ===
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Input")
 	TObjectPtr<UInputMappingContext> InputMappingContext;
@@ -67,6 +71,9 @@ protected:
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Input")
 	TObjectPtr<UInputAction> JumpAction;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Input")
+	TObjectPtr<UInputAction> CoverAction;
 
 	// === Movement State ===
 	UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, Category = "Movement|State")

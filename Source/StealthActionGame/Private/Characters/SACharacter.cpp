@@ -79,6 +79,11 @@ void ASACharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompone
 			EI->BindAction(JumpAction, ETriggerEvent::Started,   this, &ASACharacter::StartJump);
 			EI->BindAction(JumpAction, ETriggerEvent::Completed, this, &ASACharacter::StopJump);
 		}
+
+		if (CoverAction && CoverComponent)
+		{
+			EI->BindAction(CoverAction, ETriggerEvent::Started, CoverComponent.Get(), &USACoverComponent::ToggleCover);
+		}
 	}
 }
 
@@ -149,6 +154,17 @@ void ASACharacter::Move(const FInputActionValue& Value)
 
 	if (!Controller || InputVector.IsNearlyZero())
 		return;
+
+	if (CoverComponent && CoverComponent->IsInCover())
+    {
+        InputVector = CoverComponent->FilterMovementInput(InputVector, Controller->GetControlRotation());
+
+        if (InputVector.IsNearlyZero())
+            return;
+
+        const FRotationMatrix CamMatrix(Controller->GetControlRotation());
+        CoverComponent->UpdatePeekSide(CamMatrix.GetUnitAxis(EAxis::Y));
+    }
 
 	const FRotator YawRotation(0.f, Controller->GetControlRotation().Yaw, 0.f);
 	const FRotationMatrix RotMatrix(YawRotation);

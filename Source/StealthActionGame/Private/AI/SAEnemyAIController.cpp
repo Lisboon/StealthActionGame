@@ -99,8 +99,7 @@ void ASAEnemyAIController::SetAlertState(ESAAlertState NewState)
 #if ENABLE_DRAW_DEBUG
 	if (GEngine)
 	{
-		// UEnum reflection — stays correct if the enum grows
-		const FString StateName = UEnum::GetValueAsString(NewState);
+		const FString AlertStateName = UEnum::GetValueAsString(NewState);
 		const FColor StateColor = [NewState]() -> FColor
 		{
 			switch (NewState)
@@ -117,28 +116,19 @@ void ASAEnemyAIController::SetAlertState(ESAAlertState NewState)
 		{
 			DrawDebugString(GetWorld(),
 				ControlledPawn->GetActorLocation() + FVector(0.f, 0.f, 120.f),
-				FString::Printf(TEXT("STATE: %s"), *StateName),
+				FString::Printf(TEXT("STATE: %s"), *AlertStateName),
 				nullptr, StateColor, 3.f);
 		}
 	}
 #endif
 }
 
-// ----------------------------------------------------------------
-//  Perception
-// ----------------------------------------------------------------
-
 void ASAEnemyAIController::OnPerceptionUpdated(AActor* Actor, FAIStimulus Stimulus)
 {
 	if (!Actor) return;
 
-	// GetSenseID<T>() is the correct type-safe engine API.
-	// The old pattern GetDefaultObject<UAISense>()->GetSenseID() was
-	// indirect, verbose, and copied from outdated forum posts.
-
 	if (Stimulus.Type == UAISense::GetSenseID<UAISense_Sight>())
 	{
-		// Sight: only care about player-controlled pawns
 		const APawn* SensedPawn = Cast<APawn>(Actor);
 		if (SensedPawn && SensedPawn->IsPlayerControlled())
 		{
@@ -147,9 +137,6 @@ void ASAEnemyAIController::OnPerceptionUpdated(AActor* Actor, FAIStimulus Stimul
 	}
 	else if (Stimulus.Type == UAISense::GetSenseID<UAISense_Hearing>())
 	{
-		// Hearing: the stimulus location is what matters, not the actor type.
-		// Sounds can originate from non-Pawn actors (barrels, devices, etc.)
-		// Filtering by Pawn here would silently discard valid world sounds.
 		HandleHearingStimulus(Actor, Stimulus);
 	}
 }
@@ -202,16 +189,11 @@ void ASAEnemyAIController::HandleHearingStimulus(AActor* Actor, const FAIStimulu
 	}
 	else if (CurrentAlertState == ESAAlertState::Searching)
 	{
-		// New sound resets the search window
 		GetWorldTimerManager().ClearTimer(SearchTimerHandle);
 		GetWorldTimerManager().SetTimer(SearchTimerHandle, this,
 			&ASAEnemyAIController::OnSearchTimeout, AlertSearchDuration, false);
 	}
 }
-
-// ----------------------------------------------------------------
-//  Timer Callbacks
-// ----------------------------------------------------------------
 
 void ASAEnemyAIController::OnSuspiciousTimeout()
 {
