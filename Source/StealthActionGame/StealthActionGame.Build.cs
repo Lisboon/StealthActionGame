@@ -8,7 +8,7 @@ public class StealthActionGame : ModuleRules
 	{
 		PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
 	
-		PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "InputCore", "EnhancedInput", "AIModule", "Niagara", "AnimGraphRuntime", "PoseSearch", "MotionTrajectory", "MotionWarping", "Chooser" });
+		PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "InputCore", "EnhancedInput", "AIModule", "Niagara", "AnimGraphRuntime", "PoseSearch", "MotionTrajectory", "MotionWarping", "Chooser","Json","JsonUtilities","HTTP" });
 
 		PrivateDependencyModuleNames.AddRange(new string[] {  });
 
