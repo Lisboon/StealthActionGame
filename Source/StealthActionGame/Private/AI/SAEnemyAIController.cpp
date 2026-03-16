@@ -8,6 +8,7 @@
 #include "Perception/AISense_Hearing.h"
 #include "BehaviorTree/BehaviorTree.h"
 #include "BehaviorTree/BlackboardComponent.h"
+#include "Interfaces/ISADetectable.h"
 
 #if ENABLE_DRAW_DEBUG
 #include "DrawDebugHelpers.h"
@@ -129,10 +130,13 @@ void ASAEnemyAIController::OnPerceptionUpdated(AActor* Actor, FAIStimulus Stimul
 
 	if (Stimulus.Type == UAISense::GetSenseID<UAISense_Sight>())
 	{
-		const APawn* SensedPawn = Cast<APawn>(Actor);
-		if (SensedPawn && SensedPawn->IsPlayerControlled())
+		if (Actor->Implements<USADetectable>())
 		{
-			HandleSightStimulus(Actor, Stimulus);
+			const bool bCanBeDetected = ISADetectable::Execute_CanBeDetected(Actor);
+			if (bCanBeDetected)
+			{
+				HandleSightStimulus(Actor, Stimulus);
+			}
 		}
 	}
 	else if (Stimulus.Type == UAISense::GetSenseID<UAISense_Hearing>())
@@ -155,10 +159,16 @@ void ASAEnemyAIController::HandleSightStimulus(AActor* Actor, const FAIStimulus&
 			BB->SetValueAsObject(SABlackboardKeys::ThreatActor,    Actor);
 			BB->SetValueAsVector(SABlackboardKeys::ThreatLocation, LastKnownThreatLocation);
 		}
+
+		if (Actor->Implements<USADetectable>())
+		{
+			const ESADetectionProfile Profile = ISADetectable::Execute_GetDetectionProfile(Actor);
+			ISADetectable::Execute_OnDetectedByEnemy(Actor, GetPawn(), Profile);
+		}
 	}
 	else
 	{
-		CurrentThreat = nullptr;
+		CurrentThreat.Reset();
 
 		if (CurrentAlertState == ESAAlertState::Alert)
 		{

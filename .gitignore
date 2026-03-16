@@ -4,6 +4,7 @@
 
 # Visual Studio Code
 .vscode/
+.claude/
 
 # Rider
 .idea/

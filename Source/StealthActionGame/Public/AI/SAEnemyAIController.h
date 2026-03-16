@@ -6,6 +6,7 @@
 #include "AIController.h"
 #include "Perception/AIPerceptionTypes.h"
 #include "AI/SAAlertState.h"
+#include "Interfaces/ISADetectable.h"
 #include "SAEnemyAIController.generated.h"
 
 class UAIPerceptionComponent;
@@ -36,10 +37,10 @@ public:
 	FVector GetLastKnownThreatLocation() const { return LastKnownThreatLocation; }
 
 	UFUNCTION(BlueprintPure, Category = "AI|Perception")
-	AActor* GetCurrentThreat() const { return CurrentThreat; }
+	AActor* GetCurrentThreat() const { return CurrentThreat.Get(); }
 
 	UFUNCTION(BlueprintPure, Category = "AI|Perception")
-	bool HasCurrentThreat() const { return IsValid(CurrentThreat); }
+	bool HasCurrentThreat() const { return CurrentThreat.IsValid(); }
 
 protected:
 	virtual void BeginPlay() override;
@@ -86,7 +87,7 @@ private:
 	ESAAlertState CurrentAlertState = ESAAlertState::Neutral;
 
 	UPROPERTY()
-	TObjectPtr<AActor> CurrentThreat;
+	TWeakObjectPtr<AActor> CurrentThreat;
 
 	FVector LastKnownThreatLocation = FVector::ZeroVector;
 
